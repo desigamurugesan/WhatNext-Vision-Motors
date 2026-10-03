@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WhatNextVisionMotorsUpdateSet
+    xmlns="http://soap.sforce.com/2006/04/metadata"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!--
+        WhatNext Vision Motors - Salesforce CRM
+        Project component manifest derived from the project documentation.
+
+        Note:
+        This is a project-specific XML manifest, not a native Salesforce
+        Metadata API package.xml or Salesforce outbound change-set XML.
+        Salesforce-generated metadata should be exported from the target org
+        before deployment.
+    -->
+
+    <project>
+        <name>WhatNext Vision Motors</name>
+        <type>Salesforce CRM - Vehicle Order Management System</type>
+    </project>
+
+    <customObjects>
+        <customObject>Vehicle__c</customObject>
+        <customObject>Vehicle_Dealer__c</customObject>
+        <customObject>Vehicle_Customer__c</customObject>
+        <customObject>Vehicle_Order__c</customObject>
+        <customObject>Vehicle_Test_Drive__c</customObject>
+        <customObject>Vehicle_Service_Request__c</customObject>
+    </customObjects>
+
+    <fields>
+        <object name="Vehicle__c">
+            <field>Vehicle_Name__c</field>
+            <field>Vehicle_Model__c</field>
+            <field>Stock_Quantity__c</field>
+            <field>Price__c</field>
+            <field>Dealer__c</field>
+            <field>Status__c</field>
+        </object>
+
+        <object name="Vehicle_Dealer__c">
+            <field>Dealer_Name__c</field>
+            <field>Dealer_Location__c</field>
+            <field>Dealer_Code__c</field>
+            <field>Phone__c</field>
+            <field>Email__c</field>
+        </object>
+
+        <object name="Vehicle_Order__c">
+            <field>Customer__c</field>
+            <field>Vehicle__c</field>
+            <field>Order_Date__c</field>
+            <field>Status__c</field>
+        </object>
+
+        <object name="Vehicle_Customer__c">
+            <field>Customer_Name__c</field>
+            <field>Email__c</field>
+            <field>Phone__c</field>
+            <field>Address__c</field>
+            <field>Preferred_Vehicle_Type__c</field>
+        </object>
+
+        <object name="Vehicle_Test_Drive__c">
+            <field>Customer__c</field>
+            <field>Vehicle__c</field>
+            <field>Test_Drive_Date__c</field>
+            <field>Status__c</field>
+        </object>
+
+        <object name="Vehicle_Service_Request__c">
+            <field>Customer__c</field>
+            <field>Vehicle__c</field>
+            <field>Service_Date__c</field>
+            <field>Issue_Description__c</field>
+            <field>Status__c</field>
+        </object>
+    </fields>
+
+    <flows>
+        <flow name="Auto_Assign_Dealer">
+            <object>Vehicle_Order__c</object>
+            <type>Record-Triggered Flow</type>
+            <trigger>Record Created</trigger>
+            <entryCondition>
+                <field>Status__c</field>
+                <operator>equals</operator>
+                <value>Pending</value>
+            </entryCondition>
+            <steps>
+                <step>Get Customer Information</step>
+                <step>Get Nearest Dealer using customer location</step>
+                <step>Update Vehicle Order with assigned dealer</step>
+            </steps>
+            <status>Active</status>
+        </flow>
+
+        <flow name="Test_Drive_Reminder">
+            <object>Vehicle_Test_Drive__c</object>
+            <type>Record-Triggered Flow</type>
+            <trigger>Record Created or Updated</trigger>
+            <entryCondition>
+                <field>Status__c</field>
+                <operator>equals</operator>
+                <value>Scheduled</value>
+            </entryCondition>
+            <scheduledPath>
+                <offset>-1</offset>
+                <unit>Day</unit>
+                <referenceField>Test_Drive_Date__c</referenceField>
+            </scheduledPath>
+            <steps>
+                <step>Get Customer Information</step>
+                <step>Send Email</step>
+            </steps>
+            <email>
+                <subject>Reminder: Your Test Drive is Tomorrow!</subject>
+                <recipientField>Email__c</recipientField>
+            </email>
+            <status>Active</status>
+        </flow>
+    </flows>
+
+    <apex>
+        <trigger name="VehicleOrderTrigger">
+            <object>Vehicle_Order__c</object>
+            <events>
+                <event>before insert</event>
+                <event>before update</event>
+                <event>after insert</event>
+                <event>after update</event>
+            </events>
+            <handler>VehicleOrderTriggerHandler</handler>
+        </trigger>
+
+        <class name="VehicleOrderTriggerHandler">
+            <responsibilities>
+                <item>Validate stock availability</item>
+                <item>Prevent orders when stock is unavailable</item>
+                <item>Reduce vehicle stock when an order is confirmed</item>
+            </responsibilities>
+        </class>
+
+        <class name="VehicleOrderBatch">
+            <responsibilities>
+                <item>Process pending vehicle orders in batches</item>
+                <item>Confirm eligible pending orders when stock becomes available</item>
+                <item>Reduce corresponding vehicle stock</item>
+            </responsibilities>
+        </class>
+
+        <class name="VehicleOrderBatchScheduler">
+            <responsibilities>
+                <item>Schedule VehicleOrderBatch</item>
+                <item>Batch size: 50</item>
+            </responsibilities>
+        </class>
+    </apex>
+
+    <application>
+        <name>WhatNext Vision Motors</name>
+        <navigationItems>
+            <item>Vehicle</item>
+            <item>Dealer</item>
+            <item>Customer</item>
+            <item>Order</item>
+            <item>Test Drive</item>
+            <item>Service Request</item>
+            <item>Reports</item>
+            <item>Dashboard</item>
+        </navigationItems>
+    </application>
+
+    <automationSummary>
+        <sequence>
+            Customer Input
+            -&gt; Order Creation
+            -&gt; Stock Validation
+            -&gt; Dealer Assignment
+            -&gt; Status Update
+            -&gt; Reports
+        </sequence>
+    </automationSummary>
+
+</WhatNextVisionMotorsUpdateSet>
